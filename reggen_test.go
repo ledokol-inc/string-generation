@@ -24,6 +24,7 @@ var cases = []testCase{
 	{`[^0-5a-z\s]{5}`},
 	{`Z{2,5}`},
 	{`[a-zA-Z]{100}`},
+	{`^[a-z]{5,10}@[a-z]{5,10}\.(com|net|org)$`},
 }
 
 func TestGenerate(t *testing.T) {

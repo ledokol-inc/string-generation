@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// generate a single string
-	str, err := reggen.Generate("[a-z]{5,10}@[a-z]{5,10}\\.com", 10)
+	str, err := reggen.Generate("^[a-z]{5,10}@[a-z]{5,10}\\.(com|net|org)$", 10)
 	if err != nil {
 		panic(err)
 	}
