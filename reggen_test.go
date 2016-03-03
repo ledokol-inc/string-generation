@@ -50,3 +50,15 @@ func TestGenerate(t *testing.T) {
 		}
 	}
 }
+
+func BenchmarkGenerate(b *testing.B) {
+	r, err := NewGenerator(`^[a-z]{5,10}@[a-z]+\.(com|net|org)$`)
+	if err != nil {
+		b.Fatal("Error creating generator: ", err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		r.Generate(10)
+	}
+}
