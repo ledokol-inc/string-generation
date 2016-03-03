@@ -12,8 +12,8 @@ type testCase struct {
 
 var cases = []testCase{
 	{`123[0-2]+.*\w{3}`},
-	{`^\d{1,2}[/](1[0-2]|[1-9])[/]((19|20)\d{2})`},
-	{`^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])`},
+	{`^\d{1,2}[/](1[0-2]|[1-9])[/]((19|20)\d{2})$`},
+	{`^((25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])\.){3}(25[0-5]|(2[0-4]|1{0,1}[0-9]){0,1}[0-9])$`},
 	{`^\d+$`},
 	{`\D{3}`},
 	{`((123)?){3}`},
@@ -26,7 +26,7 @@ var cases = []testCase{
 	{`[a-zA-Z]{100}`},
 }
 
-func TestGeneration(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	for _, test := range cases {
 		for i := 0; i < 10; i++ {
 			r, err := NewGenerator(test.regex)
@@ -43,7 +43,7 @@ func TestGeneration(t *testing.T) {
 			if err != nil {
 				t.Fatal("Invalid test case. regex: ", test.regex, " failed to compile:", err)
 			}
-			if !re.Match([]byte(res)) {
+			if !re.MatchString(res) {
 				t.Error("Generated data does not match regex. Regex: ", test.regex, " output: ", res)
 			}
 		}
