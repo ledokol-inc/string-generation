@@ -17,7 +17,7 @@ import (
 
 func main() {
 	// generate a single string
-	str, err := reggen.Generate("[123]{3}", 10)
+	str, err := reggen.Generate("[a-z]{5,10}@[a-z]{5,10}\\.com", 10)
 	if err != nil {
 		panic(err)
 	}
@@ -35,4 +35,15 @@ func main() {
 		fmt.Println(g.Generate(10))
 	}
 }
+```
+
+### Sample output:
+
+```
+bxnpubwc@kwrdbvjic.com
+11000
+01010
+01100
+01111
+01001
 ```
