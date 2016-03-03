@@ -10,10 +10,10 @@ import (
 	"time"
 )
 
-const RuneRangeEnd = 0x10ffff
-const PrintableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r"
+const runeRangeEnd = 0x10ffff
+const printableChars = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!\"#$%&'()*+,-./:;<=>?@[\\]^_`{|}~ \t\n\r"
 
-var PrintableCharsNoNL = PrintableChars[:len(PrintableChars)-2]
+var printableCharsNoNL = printableChars[:len(printableChars)-2]
 
 type state struct {
 	limit int
@@ -46,7 +46,7 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 				fmt.Printf("Range: %#U-%#U\n", re.Rune[i], re.Rune[i+1])
 			}
 			sum += int(re.Rune[i+1]-re.Rune[i]) + 1
-			if re.Rune[i+1] == RuneRangeEnd {
+			if re.Rune[i+1] == runeRangeEnd {
 				sum = -1
 				break
 			}
@@ -54,8 +54,8 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 		// pick random char in range (inverse match group)
 		if sum == -1 {
 			possibleChars := []uint8{}
-			for j := 0; j < len(PrintableChars); j++ {
-				c := PrintableChars[j]
+			for j := 0; j < len(printableChars); j++ {
+				c := printableChars[j]
 				//fmt.Printf("Char %c %d\n", c, c)
 				// Check c in range
 				for i := 0; i < len(re.Rune); i += 2 {
@@ -93,9 +93,9 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 		}
 		return fmt.Sprintf("%c", ru)
 	case syntax.OpAnyCharNotNL, syntax.OpAnyChar:
-		chars := PrintableChars
+		chars := printableChars
 		if op == syntax.OpAnyCharNotNL {
-			chars = PrintableCharsNoNL
+			chars = printableCharsNoNL
 		}
 		c := chars[g.rand.Intn(len(chars))]
 		return string([]byte{c})
