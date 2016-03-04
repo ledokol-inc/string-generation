@@ -152,7 +152,7 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 		count := 0
 		re.Max = int(math.Min(float64(re.Max), float64(s.limit)))
 		if re.Max > re.Min {
-			count = g.rand.Intn(re.Max - re.Min)
+			count = g.rand.Intn(re.Max - re.Min + 1)
 		}
 		if g.debug {
 			fmt.Println(re.Max, count)
