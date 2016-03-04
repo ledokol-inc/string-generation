@@ -3,6 +3,8 @@ Reg-gen
 
 This package generates strings based on regular expressions
 
+# Try it [here](https://lucasjones.github.io/reggen)
+
 Usage
 =====
 
