@@ -35,7 +35,7 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 	case syntax.OpLiteral:
 		res := ""
 		for _, r := range re.Rune {
-			res += fmt.Sprintf("%c", r)
+			res += string(r)
 		}
 		return res
 	case syntax.OpCharClass:
@@ -91,7 +91,7 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 		if g.debug {
 			fmt.Printf("Generated rune %c for range %v\n", ru, re)
 		}
-		return fmt.Sprintf("%c", ru)
+		return string(ru)
 	case syntax.OpAnyCharNotNL, syntax.OpAnyChar:
 		chars := printableChars
 		if op == syntax.OpAnyCharNotNL {
