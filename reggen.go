@@ -201,6 +201,10 @@ func NewGenerator(regex string) (*Generator, error) {
 	}, nil
 }
 
+func (gen *Generator) SetSeed(seed int64) {
+	gen.rand = rand.New(rand.NewSource(seed))
+}
+
 func Generate(regex string, limit int) (string, error) {
 	g, err := NewGenerator(regex)
 	if err != nil {
