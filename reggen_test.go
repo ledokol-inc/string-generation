@@ -65,13 +65,19 @@ func TestSeed(t *testing.T) {
 	g1.SetSeed(currentTime)
 	g2.SetSeed(currentTime)
 	for i := 0; i < 10; i++ {
-		res1 := g1.Generate(100)
-		res2 := g2.Generate(100)
-		fmt.Printf("res1: %v\n res2: %v\n", res1, res2)
-		if res1 != res2 {
+		if g1.Generate(100) != g2.Generate(100) {
 			t.Error("Results are not reproducible")
 		}
 	}
+
+	g1.SetSeed(123)
+	g2.SetSeed(456)
+	for i := 0; i < 10; i++ {
+		if g1.Generate(100) == g2.Generate(100) {
+			t.Error("Results should not match")
+		}
+	}
+
 }
 
 func BenchmarkGenerate(b *testing.B) {
