@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"regexp"
 	"testing"
+	"time"
 )
 
 type testCase struct {
@@ -49,6 +50,34 @@ func TestGenerate(t *testing.T) {
 			}
 		}
 	}
+}
+
+func TestSeed(t *testing.T) {
+	g1, err := NewGenerator(cases[0].regex)
+	if err != nil {
+		t.Fatal("Error creating generator: ", err)
+	}
+	g2, err := NewGenerator(cases[0].regex)
+	if err != nil {
+		t.Fatal("Error creating generator: ", err)
+	}
+	currentTime := time.Now().UnixNano()
+	g1.SetSeed(currentTime)
+	g2.SetSeed(currentTime)
+	for i := 0; i < 10; i++ {
+		if g1.Generate(100) != g2.Generate(100) {
+			t.Error("Results are not reproducible")
+		}
+	}
+
+	g1.SetSeed(123)
+	g2.SetSeed(456)
+	for i := 0; i < 10; i++ {
+		if g1.Generate(100) == g2.Generate(100) {
+			t.Error("Results should not match")
+		}
+	}
+
 }
 
 func BenchmarkGenerate(b *testing.B) {
