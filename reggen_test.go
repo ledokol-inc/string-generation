@@ -2,7 +2,9 @@ package reggen
 
 import (
 	"fmt"
+	"math/rand"
 	"regexp"
+	"regexp/syntax"
 	"testing"
 	"time"
 )
@@ -31,12 +33,10 @@ var cases = []testCase{
 func TestGenerate(t *testing.T) {
 	for _, test := range cases {
 		for i := 0; i < 10; i++ {
-			r, err := NewGenerator(test.regex)
+			res, err := GenerateFromString(test.regex, 10, initRand())
 			if err != nil {
-				t.Fatal("Error creating generator: ", err)
+				t.Fatal("Error with regex: ", err)
 			}
-			r.debug = false
-			res := r.Generate(10)
 			// only print first result
 			if i < 1 {
 				fmt.Printf("Regex: %v Result: \"%s\"\n", test.regex, res)
@@ -53,41 +53,48 @@ func TestGenerate(t *testing.T) {
 }
 
 func TestSeed(t *testing.T) {
-	g1, err := NewGenerator(cases[0].regex)
-	if err != nil {
-		t.Fatal("Error creating generator: ", err)
-	}
-	g2, err := NewGenerator(cases[0].regex)
-	if err != nil {
-		t.Fatal("Error creating generator: ", err)
-	}
 	currentTime := time.Now().UnixNano()
-	g1.SetSeed(currentTime)
-	g2.SetSeed(currentTime)
+	rand1 := rand.New(rand.NewSource(currentTime))
+	rand2 := rand.New(rand.NewSource(currentTime))
 	for i := 0; i < 10; i++ {
-		if g1.Generate(100) != g2.Generate(100) {
+		res1, err1 := GenerateFromString(cases[0].regex, 100, rand1)
+		res2, err2 := GenerateFromString(cases[0].regex, 100, rand2)
+		if err1 != nil || err2 != nil {
+			t.Fatal("Error with regex: ", err1, err2)
+		}
+		if res1 != res2 {
 			t.Error("Results are not reproducible")
 		}
 	}
 
-	g1.SetSeed(123)
-	g2.SetSeed(456)
+	rand1 = rand.New(rand.NewSource(123))
+	rand2 = rand.New(rand.NewSource(456))
 	for i := 0; i < 10; i++ {
-		if g1.Generate(100) == g2.Generate(100) {
+		res1, err1 := GenerateFromString(cases[0].regex, 100, rand1)
+		res2, err2 := GenerateFromString(cases[0].regex, 100, rand2)
+		if err1 != nil || err2 != nil {
+			t.Fatal("Error with regex: ", err1, err2)
+		}
+		if res1 == res2 {
 			t.Error("Results should not match")
 		}
 	}
-
 }
 
 func BenchmarkGenerate(b *testing.B) {
-	r, err := NewGenerator(`^[a-z]{5,10}@[a-z]+\.(com|net|org)$`)
+	regex, err := syntax.Parse(`^[a-z]{5,10}@[a-z]+\.(com|net|org)$`, syntax.Perl)
 	if err != nil {
-		b.Fatal("Error creating generator: ", err)
+		b.Fatal("Error with regex ", err)
 	}
+
+	randTest := initRand()
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		r.Generate(10)
+		Generate(regex, 10, randTest)
 	}
+}
+
+func initRand() *rand.Rand {
+	return rand.New(rand.NewSource(time.Now().UnixNano()))
 }

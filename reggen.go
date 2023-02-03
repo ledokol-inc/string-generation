@@ -2,12 +2,9 @@
 package reggen
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
-	"os"
 	"regexp/syntax"
-	"time"
 )
 
 const runeRangeEnd = 0x10ffff
@@ -19,14 +16,7 @@ type state struct {
 	limit int
 }
 
-type Generator struct {
-	re    *syntax.Regexp
-	rand  *rand.Rand
-	debug bool
-}
-
-func (g *Generator) generate(s *state, re *syntax.Regexp) string {
-	//fmt.Println("re:", re, "sub:", re.Sub)
+func generate(s *state, re *syntax.Regexp, rand *rand.Rand) string {
 	op := re.Op
 	switch op {
 	case syntax.OpNoMatch:
@@ -42,9 +32,6 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 		// number of possible chars
 		sum := 0
 		for i := 0; i < len(re.Rune); i += 2 {
-			if g.debug {
-				fmt.Printf("Range: %#U-%#U\n", re.Rune[i], re.Rune[i+1])
-			}
 			sum += int(re.Rune[i+1]-re.Rune[i]) + 1
 			if re.Rune[i+1] == runeRangeEnd {
 				sum = -1
@@ -67,17 +54,11 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 			}
 			//fmt.Println("Possible chars: ", possibleChars)
 			if len(possibleChars) > 0 {
-				c := possibleChars[g.rand.Intn(len(possibleChars))]
-				if g.debug {
-					fmt.Printf("Generated rune %c for inverse range %v\n", c, re)
-				}
+				c := possibleChars[rand.Intn(len(possibleChars))]
 				return string([]byte{c})
 			}
 		}
-		if g.debug {
-			fmt.Println("Char range: ", sum)
-		}
-		r := g.rand.Intn(int(sum))
+		r := rand.Intn(sum)
 		var ru rune
 		sum = 0
 		for i := 0; i < len(re.Rune); i += 2 {
@@ -88,16 +69,13 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 			}
 			sum += gap
 		}
-		if g.debug {
-			fmt.Printf("Generated rune %c for range %v\n", ru, re)
-		}
 		return string(ru)
 	case syntax.OpAnyCharNotNL, syntax.OpAnyChar:
 		chars := printableChars
 		if op == syntax.OpAnyCharNotNL {
 			chars = printableCharsNoNL
 		}
-		c := chars[g.rand.Intn(len(chars))]
+		c := chars[rand.Intn(len(chars))]
 		return string([]byte{c})
 	case syntax.OpBeginLine:
 	case syntax.OpEndLine:
@@ -106,60 +84,50 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 	case syntax.OpWordBoundary:
 	case syntax.OpNoWordBoundary:
 	case syntax.OpCapture:
-		if g.debug {
-			fmt.Println("OpCapture", re.Sub, len(re.Sub))
-		}
-		return g.generate(s, re.Sub0[0])
+		return generate(s, re.Sub0[0], rand)
 	case syntax.OpStar:
 		// Repeat zero or more times
 		res := ""
-		count := g.rand.Intn(s.limit + 1)
+		count := rand.Intn(s.limit + 1)
 		for i := 0; i < count; i++ {
 			for _, r := range re.Sub {
-				res += g.generate(s, r)
+				res += generate(s, r, rand)
 			}
 		}
 		return res
 	case syntax.OpPlus:
 		// Repeat one or more times
 		res := ""
-		count := g.rand.Intn(s.limit) + 1
+		count := rand.Intn(s.limit) + 1
 		for i := 0; i < count; i++ {
 			for _, r := range re.Sub {
-				res += g.generate(s, r)
+				res += generate(s, r, rand)
 			}
 		}
 		return res
 	case syntax.OpQuest:
 		// Zero or one instances
 		res := ""
-		count := g.rand.Intn(2)
-		if g.debug {
-			fmt.Println("Quest", count)
-		}
+		count := rand.Intn(2)
+
 		for i := 0; i < count; i++ {
 			for _, r := range re.Sub {
-				res += g.generate(s, r)
+				res += generate(s, r, rand)
 			}
 		}
 		return res
 	case syntax.OpRepeat:
 		// Repeat one or more times
-		if g.debug {
-			fmt.Println("OpRepeat", re.Min, re.Max)
-		}
 		res := ""
 		count := 0
 		re.Max = int(math.Min(float64(re.Max), float64(s.limit)))
 		if re.Max > re.Min {
-			count = g.rand.Intn(re.Max - re.Min + 1)
+			count = rand.Intn(re.Max - re.Min + 1)
 		}
-		if g.debug {
-			fmt.Println(re.Max, count)
-		}
+
 		for i := 0; i < re.Min || i < (re.Min+count); i++ {
 			for _, r := range re.Sub {
-				res += g.generate(s, r)
+				res += generate(s, r, rand)
 			}
 		}
 		return res
@@ -167,48 +135,28 @@ func (g *Generator) generate(s *state, re *syntax.Regexp) string {
 		// Concatenate sub-regexes
 		res := ""
 		for _, r := range re.Sub {
-			res += g.generate(s, r)
+			res += generate(s, r, rand)
 		}
 		return res
 	case syntax.OpAlternate:
-		if g.debug {
-			fmt.Println("OpAlternative", re.Sub, len(re.Sub))
-		}
-		i := g.rand.Intn(len(re.Sub))
-		return g.generate(s, re.Sub[i])
+		i := rand.Intn(len(re.Sub))
+		return generate(s, re.Sub[i], rand)
 	default:
-		fmt.Fprintln(os.Stderr, "[reg-gen] Unhandled op: ", op)
+
 	}
 	return ""
 }
 
 // limit is the maximum number of times star, range or plus should repeat
 // i.e. [0-9]+ will generate at most 10 characters if this is set to 10
-func (g *Generator) Generate(limit int) string {
-	return g.generate(&state{limit: limit}, g.re)
+func Generate(re *syntax.Regexp, limit int, rand *rand.Rand) string {
+	return generate(&state{limit: limit}, re, rand)
 }
 
-// create a new generator
-func NewGenerator(regex string) (*Generator, error) {
-	re, err := syntax.Parse(regex, syntax.Perl)
-	if err != nil {
-		return nil, err
-	}
-	//fmt.Println("Compiled re ", re)
-	return &Generator{
-		re:   re,
-		rand: rand.New(rand.NewSource(time.Now().UnixNano())),
-	}, nil
-}
-
-func (gen *Generator) SetSeed(seed int64) {
-	gen.rand = rand.New(rand.NewSource(seed))
-}
-
-func Generate(regex string, limit int) (string, error) {
-	g, err := NewGenerator(regex)
+func GenerateFromString(re string, limit int, rand *rand.Rand) (string, error) {
+	regex, err := syntax.Parse(re, syntax.Perl)
 	if err != nil {
 		return "", err
 	}
-	return g.Generate(limit), nil
+	return Generate(regex, limit, rand), nil
 }
